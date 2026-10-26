@@ -310,8 +310,17 @@ def main():
 
     # 复合紧凑字段（适合高颜值精简卡片）
     weather_summary = f"{display_city} ｜ {weather_info['weather']} {weather_info.get('temp_range', weather_info['temperature'])}"
-    love_summary = f"第 {love_days}（余生请多指教）"
-    birthday_summary = f"{birthday_days}"
+    
+    # 纯天数处理，避免图标重复
+    raw_love_days = calculate_love_days(start_date).replace("❤️", "").replace("天", "").strip()
+    love_summary = f"我们已经相恋 {raw_love_days} 天啦（余生请多指教）"
+
+    raw_birthday_days = calculate_birthday_days(birthday).replace("🎂", "").strip()
+    if "今天就是你的生日" in raw_birthday_days:
+        birthday_summary = "今天就是你的生日啦！祝宝贝生日快乐！🎉"
+    else:
+        days_num = "".join([c for c in raw_birthday_days if c.isdigit()])
+        birthday_summary = f"距离宝贝生日还有 {days_num} 天"
 
     # 构造兼容数据字典（同时兼容老版报表模板与新版高级极简模板）
     template_data = {
