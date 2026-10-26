@@ -15,7 +15,6 @@ def load_config():
             except Exception as e:
                 print(f"[警告] 读取本地 config.json 失败: {e}")
 
-    # 环境变量覆盖（GitHub Secrets）
     env_keys = [
         "APP_ID", "APP_SECRET", "TEMPLATE_ID", "USER_OPENID",
         "CITY", "START_DATE", "BIRTHDAY", "CUSTOM_NOTE", "AMAP_KEY"
@@ -42,13 +41,13 @@ def get_access_token(app_id, app_secret):
         return None
 
 def translate_weather_desc(desc):
-    """常见天气英文到中文映射"""
+    """常见天气英文到中文映射，带贴心小图标"""
     mapping = {
         "patchy rain nearby": "局部阵雨 🌦️",
-        "patchy light rain": "小雨渐止 🌦️",
+        "patchy light rain": "小阵雨 🌦️",
         "light rain shower": "小阵雨 🌦️",
         "rain shower": "阵雨 🌦️",
-        "patchy rain possible": "可能有雨 🌦️",
+        "patchy rain possible": "局部可能有雨 🌦️",
         "light drizzle": "毛毛细雨 🌦️",
         "light rain": "小雨 🌧️",
         "moderate rain": "中雨 🌧️",
@@ -82,9 +81,30 @@ def translate_weather_desc(desc):
 
     return desc
 
+def format_wind(wind_dir, wind_speed):
+    """将生硬的风向风力转为生活化温馨描述"""
+    dir_map = {
+        "N": "北风", "S": "南风", "E": "东风", "W": "西风",
+        "NE": "东北风", "NW": "西北风", "SE": "东南风", "SW": "西南风",
+        "NNE": "偏北风", "NNW": "偏北风", "SSE": "偏南风", "SSW": "偏南风",
+        "ENE": "偏东风", "ESE": "偏东风", "WNW": "偏西风", "WSW": "偏西风"
+    }
+    chinese_dir = dir_map.get(wind_dir.upper(), "微风")
+    try:
+        speed = float(wind_speed)
+        if speed < 12:
+            power = "微风拂面 🍃"
+        elif speed < 28:
+            power = "清风徐徐 🌿"
+        else:
+            power = "风力稍大 💨"
+    except Exception:
+        power = "轻柔微风 🍃"
+
+    return f"{chinese_dir} · {power}"
+
 def get_weather_info(city, amap_key=None):
-    """获取天气信息（双方案：免 Key 的 wttr 或高德 API）"""
-    # 方案 1: 如果配置了高德地图 API Key
+    """获取天气信息"""
     if amap_key:
         try:
             url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={city}&key={amap_key}&extensions=all"
@@ -106,11 +126,11 @@ def get_weather_info(city, amap_key=None):
                     "max_temp": int(day_temp) if day_temp.isdigit() else 25
                 }
         except Exception as e:
-            print(f"[提示] 高德天气接口调用失败，尝试备用天气源: {e}")
+            print(f"[提示] 高德天气接口调用失败: {e}")
 
-    # 方案 2: 免 Key 的 wttr.in 天气数据
     try:
-        url = f"https://wttr.in/{city}?format=j1"
+        query_city = "闽侯" if "闽侯" in city else city
+        url = f"https://wttr.in/{query_city}?format=j1"
         res = requests.get(url, timeout=10).json()
         cur = res["current_condition"][0]
         day = res["weather"][0]
@@ -120,14 +140,17 @@ def get_weather_info(city, amap_key=None):
         max_temp = day.get("maxtempC", "")
         raw_desc = cur.get("weatherDesc", [{}])[0].get("value", "晴")
         weather_desc = translate_weather_desc(raw_desc)
-        wind_dir = cur.get("winddir16Point", "")
-        wind_speed = cur.get("windspeedKmph", "")
+        wind_dir = cur.get("winddir16Point", "E")
+        wind_speed = cur.get("windspeedKmph", "8")
+        wind_desc = format_wind(wind_dir, wind_speed)
 
         return {
             "city": city,
             "weather": weather_desc,
             "temperature": f"{min_temp}℃ ~ {max_temp}℃ (实时 {temp_c}℃)",
-            "wind": f"{wind_dir}风 {wind_speed}km/h",
+            "temp_range": f"{min_temp}℃ ~ {max_temp}℃",
+            "current_temp": f"{temp_c}℃",
+            "wind": wind_desc,
             "min_temp": int(min_temp) if min_temp.lstrip("-").isdigit() else 18,
             "max_temp": int(max_temp) if max_temp.lstrip("-").isdigit() else 25
         }
@@ -135,33 +158,31 @@ def get_weather_info(city, amap_key=None):
         print(f"[警告] 获取天气失败: {e}")
         return {
             "city": city,
-            "weather": "阳光明媚 ☀️",
-            "temperature": "适宜",
-            "wind": "微风",
+            "weather": "晴朗 🌤️",
+            "temperature": "舒适",
+            "temp_range": "20℃ ~ 26℃",
+            "current_temp": "24℃",
+            "wind": "微风拂面 🍃",
             "min_temp": 20,
             "max_temp": 25
         }
 
 def get_care_tips(weather_info):
-    """根据天气生成关怀小贴士"""
+    """根据天气生成精炼关怀小贴士（严格控制字数，防止微信折叠截断）"""
     weather = weather_info.get("weather", "")
     min_temp = weather_info.get("min_temp", 20)
     max_temp = weather_info.get("max_temp", 25)
 
-    tips = []
     if "雨" in weather:
-        tips.append("今天可能有雨，出门千万记得带伞哦 ☔")
-    elif "雪" in weather:
-        tips.append("下雪路滑，走路慢一点，注意防寒保暖 ❄️")
-
-    if min_temp < 10:
-        tips.append("早晚温差大，出门多添一件外套，别着凉啦 🧣")
-    elif max_temp > 30:
-        tips.append("天气比较炎热，注意防晒，多喝温水哦 🥤")
-    else:
-        tips.append("今天温度很舒适，记得按时吃早饭，保持好心情 🥪")
-
-    return " ".join(tips)
+        return "今天有雨，出门乖乖带伞哦 ☔"
+    if "雪" in weather:
+        return "下雪路滑，注意防滑保暖 ❄️"
+    if min_temp < 12:
+        return "早晚偏凉，多穿一件外套呀 🧣"
+    if max_temp > 29:
+        return "阳光充足，注意防晒多喝水 🥤"
+    
+    return "今天温度很舒服，保持好心情 🥪"
 
 def calculate_love_days(start_date_str):
     """计算恋爱天数"""
@@ -175,7 +196,7 @@ def calculate_love_days(start_date_str):
         return "很长很长时间"
 
 def calculate_birthday_days(birthday_str):
-    """计算距离女朋友生日的天数 (格式如 10-01 或 2001-10-01)"""
+    """计算距离女朋友生日的天数"""
     try:
         parts = birthday_str.strip().split("-")
         month = int(parts[-2])
@@ -198,7 +219,6 @@ def calculate_birthday_days(birthday_str):
 
 def get_sweet_words(custom_note=""):
     """获取浪漫金句或情话"""
-    # 尝试从金山词霸每日一句获取
     try:
         res = requests.get("http://open.iciba.com/dsapi/", timeout=5).json()
         note = res.get("note", "").strip()
@@ -209,7 +229,6 @@ def get_sweet_words(custom_note=""):
     except Exception as e:
         print(f"[提示] 金山词霸接口跳过: {e}")
 
-    # 读取本地精选情话兜底
     quotes_path = os.path.join(os.path.dirname(__file__), "quotes.json")
     if os.path.exists(quotes_path):
         try:
@@ -226,9 +245,11 @@ def get_sweet_words(custom_note=""):
 
 def get_today_str():
     """获取今天的日期和星期"""
-    weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    weekdays = ["星期一", "星期二", "星期四", "星期五", "星期六", "星期日"]
+    # 修正星期索引
+    all_weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
     today = datetime.date.today()
-    return f"{today.strftime('%Y年%m月%d日')} {weekdays[today.weekday()]}"
+    return f"{today.strftime('%Y年%m月%d日')} {all_weekdays[today.weekday()]}"
 
 def send_template_message(access_token, user_openid, template_id, template_data):
     """向指定用户发送微信模板消息"""
@@ -263,18 +284,15 @@ def main():
     user_openid = config.get("user_openid")
 
     if not app_id or not app_secret or not template_id or not user_openid:
-        print("[错误] 缺少核心配置 (app_id, app_secret, template_id, user_openid)！")
-        print("请在本地创建 config.json，或者在 GitHub Secrets 中配置相应环境变量。")
+        print("[错误] 缺少核心配置！")
         return
 
-    # 1. 获取微信 token
     token = get_access_token(app_id, app_secret)
     if not token:
         print("[终止] 无法获取微信 access_token，程序退出。")
         return
 
-    # 2. 组装数据
-    city = config.get("city", "闽侯")
+    city = config.get("city", "福州闽侯")
     display_city = "福州 · 闽侯" if "闽侯" in city else city
     amap_key = config.get("amap_key", "")
     weather_info = get_weather_info("闽侯" if "闽侯" in city else city, amap_key)
@@ -286,12 +304,18 @@ def main():
     birthday = config.get("birthday", "04-04")
     birthday_days = calculate_birthday_days(birthday)
 
-    custom_note = config.get("custom_note", "")
+    custom_note = config.get("custom_note", "早安宝贝！今天也是超级想你的一天，记得按时吃早饭哦 ❤️")
     words = get_sweet_words(custom_note)
     today_str = get_today_str()
 
-    # 3. 构造模板变量及颜色
+    # 复合紧凑字段（适合高颜值精简卡片）
+    weather_summary = f"{display_city} ｜ {weather_info['weather']} {weather_info.get('temp_range', weather_info['temperature'])}"
+    love_summary = f"第 {love_days}（余生请多指教）"
+    birthday_summary = f"{birthday_days}"
+
+    # 构造兼容数据字典（同时兼容老版报表模板与新版高级极简模板）
     template_data = {
+        # 老版模板字段
         "date": {"value": today_str, "color": "#1E90FF"},
         "city": {"value": display_city, "color": "#20B2AA"},
         "weather": {"value": weather_info["weather"], "color": "#3CB371"},
@@ -300,15 +324,17 @@ def main():
         "tips": {"value": tips, "color": "#FF69B4"},
         "love_days": {"value": love_days, "color": "#FF1493"},
         "birthday_days": {"value": birthday_days, "color": "#FFA500"},
-        "words": {"value": words, "color": "#9370DB"}
+        "words": {"value": words, "color": "#9370DB"},
+
+        # 新版高级极简风模板字段
+        "greeting": {"value": "亲爱的宝贝，早安！✨", "color": "#FF1493"},
+        "weather_line": {"value": weather_summary, "color": "#1E90FF"},
+        "tips_line": {"value": tips, "color": "#FF69B4"},
+        "love_line": {"value": love_summary, "color": "#FF4500"},
+        "birthday_line": {"value": birthday_summary, "color": "#FFA500"},
+        "sweet_words": {"value": words, "color": "#6A5ACD"}
     }
 
-    print("\n📦 今日生成的消息内容预览：")
-    for k, v in template_data.items():
-        print(f"  - {k}: {v['value']}")
-    print("-" * 50)
-
-    # 4. 支持单个或多个 openid（用逗号分隔，或者列表）
     openids = []
     if isinstance(user_openid, list):
         openids = user_openid
@@ -317,7 +343,6 @@ def main():
     else:
         openids = [str(user_openid).strip()]
 
-    # 5. 循环发送
     for openid in openids:
         send_template_message(token, openid, template_id, template_data)
 
