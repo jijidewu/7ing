@@ -342,7 +342,7 @@ def main():
             quote_en = content
     except Exception:
         pass
-    quote_full = f"{quote_cn}\n({quote_en})"
+    quote_full = f"每日一句：\n{quote_cn}\n({quote_en})"
 
     # 6. 早安专属心意
     custom_note = config.get("custom_note", "早安宝贝！今天也是超级想你的一天，记得按时吃早饭哦 ❤️")
