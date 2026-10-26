@@ -117,7 +117,7 @@ python main.py
 ### 🚀 如何开启 GitHub Pages 专属链接：
 1. 代码推送到你的 GitHub 仓库后，进入仓库页面的 **Settings** -> **Pages**。
 2. 在 **Branch** 处选择 `main`（或 `master`），目录选择 `/ (root)`，点击 **Save**。
-3. 稍等 1~2 分钟，页面上方会生成一个链接：`https://<你的用户名>.github.io/<仓库名>/gift/`。
+3. 稍等 1~2 分钟，页面上方会生成一个链接：`https://jijidewu.github.io/7ing/gift/`。
 4. 将这个链接填入 GitHub Secrets 的 `TARGET_URL`（本地测试填到 `config.json` 的 `target_url`），微信早安推送就会带上跳转入口！
 
 ---
