@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 设置 Python 环境
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -33,7 +33,9 @@ jobs:
           CITY: ${{ secrets.CITY }}
           START_DATE: ${{ secrets.START_DATE }}
           BIRTHDAY: ${{ secrets.BIRTHDAY }}
+          BIRTHDAY_TYPE: ${{ secrets.BIRTHDAY_TYPE }}
           CUSTOM_NOTE: ${{ secrets.CUSTOM_NOTE }}
           AMAP_KEY: ${{ secrets.AMAP_KEY }}
+          TARGET_URL: ${{ secrets.TARGET_URL }}
         run: |
-          python main.py
+          python main.py --mode morning

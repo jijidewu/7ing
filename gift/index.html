@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>独属于小亚晴的小浪漫 ✨</title>
+  <style>
+    :root {
+      --primary: #ff6b8b;
+      --primary-light: #ffd1dc;
+      --primary-dark: #e04768;
+      --bg-gradient: linear-gradient(135deg, #fff0f3 0%, #ffe3e8 40%, #ffd8e4 70%, #ffc6d9 100%);
+      --card-bg: rgba(255, 255, 255, 0.78);
+      --card-border: rgba(255, 255, 255, 0.9);
+      --text-main: #33272a;
+      --text-muted: #7c6f74;
+      --shadow: 0 10px 30px rgba(224, 71, 104, 0.12);
+      --shadow-hover: 0 15px 35px rgba(224, 71, 104, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    /* 樱花背景画布 */
+    #sakura-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 音乐悬浮播放器 */
+    .music-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .music-btn.playing {
+      animation: rotateDisc 4s linear infinite;
+    }
+
+    @keyframes rotateDisc {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .music-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: var(--primary);
+    }
+
+    /* 页面主容器 */
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 30px 20px 80px;
+    }
+
+    /* 顶部问候卡片 */
+    .hero {
+      text-align: center;
+      padding: 40px 20px 30px;
+      background: var(--card-bg);
+      backdrop-filter: blur(15px);
+      border-radius: 28px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(255, 107, 139, 0.12);
+      color: var(--primary-dark);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 26px;
+    }
+
+    /* 恋爱计时器 */
+    .timer-box {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 240, 245, 0.9) 100%);
+      border-radius: 20px;
+      padding: 20px 14px;
+      border: 1px solid rgba(255, 182, 193, 0.4);
+      margin-bottom: 12px;
+    }
+
+    .timer-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .timer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .timer-unit {
+      background: #ffffff;
+      padding: 10px 4px;
+      border-radius: 14px;
+      box-shadow: 0 4px 10px rgba(224, 71, 104, 0.06);
+    }
+
+    .timer-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      font-variant-numeric: tabular-nums;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .timer-unit-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .timer-milestone {
+      font-size: 12px;
+      color: var(--primary);
+      margin-top: 14px;
+      font-weight: 500;
+    }
+
+    /* 卡片通用样式 */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(15px);
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-main);
+    }
+
+    /* 情书信纸卡片 */
+    .letter-paper {
+      background: #fdfbf7;
+      border-radius: 18px;
+      padding: 22px 20px;
+      border: 1px dashed rgba(224, 71, 104, 0.3);
+      position: relative;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #4a3e42;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.02);
+    }
+
+    .letter-paper::before {
+      content: "💌";
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      font-size: 24px;
+    }
+
+    .letter-greeting {
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+
+    .letter-body {
+      margin-bottom: 16px;
+      text-indent: 2em;
+    }
+
+    .letter-sign {
+      text-align: right;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* 心动抽奖机 / 专属情话 */
+    .quote-box {
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    .quote-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.5;
+      padding: 0 10px;
+      transition: opacity 0.3s ease;
+    }
+
+    .quote-btn {
+      margin-top: 16px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(224, 71, 104, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quote-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* 甜蜜时间线 */
+    .timeline {
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: var(--primary-light);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -20px;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.2);
+    }
+
+    .timeline-date {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 4px;
+    }
+
+    .timeline-content {
+      font-size: 14px;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    /* 底部心声 */
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .heart-beat {
+      display: inline-block;
+      color: var(--primary);
+      animation: heartBeat 1.4s ease-in-out infinite;
+    }
+
+    @keyframes heartBeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 樱花飘落画布 -->
+  <canvas id="sakura-canvas"></canvas>
+
+  <!-- 悬浮轻音乐按钮 -->
+  <div class="music-btn" id="musicBtn" title="播放 / 暂停浪漫轻音乐">
+    <svg viewBox="0 0 24 24" id="musicIcon">
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+    </svg>
+  </div>
+  <audio id="bgMusic" loop preload="auto">
+    <!-- 选用稳定温暖的浪漫钢琴曲 CDN 音源 -->
+    <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-piano-112199.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="container">
+
+    <!-- 顶部封面与计时器 -->
+    <div class="hero">
+      <div class="badge">🌸 OUR LOVE STORY</div>
+      <h1 class="hero-title">致我最爱的小亚晴</h1>
+      <p class="hero-subtitle">宇宙浩瀚，星河万顷，而你是我唯一的偏爱 ✨</p>
+
+      <!-- 实时恋爱计时器 -->
+      <div class="timer-box">
+        <div class="timer-label">
+          <span>❤️ 我们已经在一起度过了</span>
+        </div>
+        <div class="timer-grid">
+          <div class="timer-unit">
+            <span class="timer-num" id="days">0</span>
+            <span class="timer-unit-text">天</span>
+          </div>
+          <div class="timer-unit">
+            <span class="timer-num" id="hours">00</span>
+            <span class="timer-unit-text">时</span>
+          </div>
+          <div class="timer-unit">
+            <span class="timer-num" id="minutes">00</span>
+            <span class="timer-unit-text">分</span>
+          </div>
+          <div class="timer-unit">
+            <span class="timer-num" id="seconds">00</span>
+            <span class="timer-unit-text">秒</span>
+          </div>
+        </div>
+        <div class="timer-milestone" id="milestone-text">正在计算下一个甜蜜纪念日...</div>
+      </div>
+    </div>
+
+    <!-- 给小亚晴的手写情书 -->
+    <div class="card">
+      <div class="card-title">
+        <span>💌 一封写给你的专属情书</span>
+      </div>
+      <div class="letter-paper">
+        <div class="letter-greeting">亲爱的小亚晴：</div>
+        <div class="letter-body">
+          从 2022 年 5 月 5 日牵起你手的那一刻起，我所有的平凡日常都变得有了色彩。
+        </div>
+        <div class="letter-body">
+          每天早晨醒来，想到在这个喧嚣忙碌的世界上有你陪伴，心里就格外踏实与温柔。不管是福州的晴天还是雨天，只要有你在身旁，就是最舒服的好日子。
+        </div>
+        <div class="letter-body">
+          以后漫长岁月的每一个春秋冬夏，我都想牵着你的手慢慢走过。你负责开开心心做自己，剩下的风雨和柴米油盐，我来替你挡。
+        </div>
+        <div class="letter-sign">永远爱你的男孩 🍀<br><span id="current-date-text"></span></div>
+      </div>
+    </div>
+
+    <!-- 心动盲盒：每日心语 -->
+    <div class="card">
+      <div class="card-title">
+        <span>✨ 今日专属心动签</span>
+      </div>
+      <div class="quote-box">
+        <div class="quote-text" id="quoteText">“晓看天色暮看云，行也思君，坐也思君。”</div>
+        <button class="quote-btn" id="quoteBtn">
+          <span>抽一张心语卡片</span> 💖
+        </button>
+      </div>
+    </div>
+
+    <!-- 我们的时间线 -->
+    <div class="card">
+      <div class="card-title">
+        <span>🕰️ 属于我们的独家记忆</span>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">2022 年 5 月 5 日</div>
+          <div class="timeline-content">我们故事的起点，很庆幸牵住了你的手 ❤️</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">每年 4 月 4 日</div>
+          <div class="timeline-content">小亚晴的生日，全世界最可爱的小朋友来到人间 🎂</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">今天与往后的每一个清晨与深夜</div>
+          <div class="timeline-content">早安有你，晚安有你，三餐四季皆是你 ✨</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部浪漫注脚 -->
+    <div class="footer">
+      Designed with <span class="heart-beat">❤️</span> specially for 小亚晴<br>
+      往后余生，岁岁年年皆是你
+    </div>
+
+  </div>
+
+  <script>
+    // 1. 相恋起点时间配置 (2022-05-05 00:00:00)
+    const START_DATE = new Date("2022-05-05T00:00:00+08:00");
+    const BIRTHDAY_MMDD = "04-04";
+
+    // 2. 恋爱计时器实时跳动
+    function updateTimer() {
+      const now = new Date();
+      const diff = now - START_DATE;
+
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        document.getElementById("days").innerText = days;
+        document.getElementById("hours").innerText = String(hours).padStart(2, "0");
+        document.getElementById("minutes").innerText = String(minutes).padStart(2, "0");
+        document.getElementById("seconds").innerText = String(seconds).padStart(2, "0");
+
+        // 生日倒计时
+        const currentYear = now.getFullYear();
+        let nextBday = new Date(`${currentYear}-${BIRTHDAY_MMDD}T00:00:00+08:00`);
+        if (now > nextBday) {
+          nextBday = new Date(`${currentYear + 1}-${BIRTHDAY_MMDD}T00:00:00+08:00`);
+        }
+        const bdayDiffDays = Math.ceil((nextBday - now) / (1000 * 60 * 60 * 24));
+        
+        let milestoneMsg = `距小亚晴生日还有 ${bdayDiffDays} 天 🎂`;
+        if (bdayDiffDays === 0 || bdayDiffDays === 365) {
+          milestoneMsg = "🎉 今天是小亚晴的生日！宝贝生日快乐！🎂";
+        }
+        document.getElementById("milestone-text").innerText = milestoneMsg;
+      }
+    }
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // 格式化当前日期
+    const now = new Date();
+    document.getElementById("current-date-text").innerText = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+
+    // 3. 专属情话库与抽取交互
+    const quotes = [
+      "晓看天色暮看云，行也思君，坐也思君。",
+      "我喜欢你，胜于昨日，略匮明朝。",
+      "遇见你之后，心动都有了具体的名字。",
+      "你是我漫漫余生里，斩钉截铁的梦想与温柔。",
+      "世间万般美好，都不及你望向我时的一抹笑意。",
+      "春风十里，不如身旁有你。",
+      "三餐四季，都想和我们的小亚晴一起慢慢度过。",
+      "想和你一起把平凡的日子，过成闪闪发光的诗。",
+      "今天也有在认真想你，比昨天多一点，比明天少一点。",
+      "无论晴天还是雨天，只要有你在心里，今天就是好天气。",
+      "愿你的快乐像清晨的微风一样明亮，晚安好梦，早安有我。",
+      "宇宙山河浪漫，生活点滴温暖，都值得我们一同奔赴。"
+    ];
+
+    const quoteText = document.getElementById("quoteText");
+    const quoteBtn = document.getElementById("quoteBtn");
+    let lastIndex = -1;
+
+    quoteBtn.addEventListener("click", () => {
+      quoteText.style.opacity = 0;
+      setTimeout(() => {
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * quotes.length);
+        } while (newIndex === lastIndex && quotes.length > 1);
+        lastIndex = newIndex;
+        quoteText.innerText = `“${quotes[newIndex]}”`;
+        quoteText.style.opacity = 1;
+      }, 200);
+    });
+
+    // 4. 音乐播放控制
+    const musicBtn = document.getElementById("musicBtn");
+    const bgMusic = document.getElementById("bgMusic");
+    let isPlaying = false;
+
+    musicBtn.addEventListener("click", () => {
+      if (isPlaying) {
+        bgMusic.pause();
+        musicBtn.classList.remove("playing");
+        isPlaying = false;
+      } else {
+        bgMusic.play().then(() => {
+          musicBtn.classList.add("playing");
+          isPlaying = true;
+        }).catch(err => {
+          console.log("音频自动播放受限:", err);
+        });
+      }
+    });
+
+    // 微信内置浏览器微信触摸时自动尝试解锁音频播放权限
+    document.addEventListener("WeixinJSBridgeReady", () => {
+      bgMusic.load();
+    }, false);
+
+    // 5. 浪漫樱花飘落动效 Canvas
+    const canvas = document.getElementById("sakura-canvas");
+    const ctx = canvas.getContext("2d");
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    class Petal {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * -height * 0.5;
+        this.size = Math.random() * 8 + 6;
+        this.speedX = Math.random() * 1.5 - 0.75;
+        this.speedY = Math.random() * 1.2 + 0.8;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 1.5 - 0.75;
+        this.opacity = Math.random() * 0.5 + 0.3;
+        this.color = Math.random() > 0.4 ? "255, 183, 197" : "255, 107, 139";
+      }
+      update() {
+        this.x += this.speedX + Math.sin(this.y * 0.01) * 0.5;
+        this.y += this.speedY;
+        this.rotation += this.rotationSpeed;
+        if (this.y > height || this.x < -20 || this.x > width + 20) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.rotation * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(this.size, -this.size / 2, this.size * 1.5, this.size / 2, 0, this.size * 1.5);
+        ctx.bezierCurveTo(-this.size * 1.5, this.size / 2, -this.size, -this.size / 2, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const petals = Array.from({ length: 26 }, () => new Petal());
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      petals.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>

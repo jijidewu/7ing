@@ -7,5 +7,6 @@
   "start_date": "2023-05-20",
   "birthday": "10-01",
   "custom_note": "今天又是超级想你的一天，记得按时吃早餐哦！",
-  "amap_key": ""
+  "amap_key": "",
+  "target_url": "https://<你的GitHub用户名>.github.io/7ing/gift/"
 }
