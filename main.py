@@ -318,9 +318,9 @@ def main():
     # 2. 贴士（今天有雨，出门乖乖带伞哦 ☔）
     tips_clean = tips.strip()
 
-    # 3. 恋爱天数（严格保留：我们已经相恋 1635 天啦（余生请多指教））
+    # 3. 恋爱天数（彻底删除“余生请多指教”，纯粹甜蜜）
     raw_love_days = calculate_love_days(start_date).replace("❤️", "").replace("天", "").strip()
-    love_clean = f"我们已经相恋 {raw_love_days} 天啦（余生请多指教）"
+    love_clean = f"我们已经相恋 {raw_love_days} 天啦"
 
     # 4. 生日天数（距离宝贝生日还有 160 天）
     raw_birthday_days = calculate_birthday_days(birthday).replace("🎂", "").strip()
