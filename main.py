@@ -44,26 +44,42 @@ def get_access_token(app_id, app_secret):
 def translate_weather_desc(desc):
     """常见天气英文到中文映射"""
     mapping = {
-        "Sunny": "晴 ☀️",
-        "Clear": "晴朗 🌤️",
-        "Partly cloudy": "多云 ⛅",
-        "Cloudy": "多云转阴 ☁️",
-        "Overcast": "阴天 ☁️",
-        "Mist": "薄雾 🌫️",
-        "Patchy rain possible": "局部有小雨 🌦️",
-        "Patchy snow possible": "局部有小雪 🌨️",
-        "Light rain": "小雨 🌧️",
-        "Moderate rain": "中雨 🌧️",
-        "Heavy rain": "大雨 ⛈️",
-        "Thundery outbreaks possible": "雷阵雨 ⛈️",
-        "Fog": "大雾 🌁",
-        "Light snow": "小雪 ❄️",
-        "Moderate snow": "中雪 ❄️",
-        "Heavy snow": "大雪 ❄️",
+        "patchy rain nearby": "局部阵雨 🌦️",
+        "patchy light rain": "小雨渐止 🌦️",
+        "light rain shower": "小阵雨 🌦️",
+        "rain shower": "阵雨 🌦️",
+        "patchy rain possible": "可能有雨 🌦️",
+        "light drizzle": "毛毛细雨 🌦️",
+        "light rain": "小雨 🌧️",
+        "moderate rain": "中雨 🌧️",
+        "heavy rain": "大雨 ⛈️",
+        "thundery outbreaks possible": "局部雷阵雨 ⛈️",
+        "moderate or heavy rain with thunder": "雷阵雨 ⛈️",
+        "partly cloudy": "多云 ⛅",
+        "cloudy": "多云转阴 ☁️",
+        "overcast": "阴天 ☁️",
+        "sunny": "晴 ☀️",
+        "clear": "晴朗 🌤️",
+        "mist": "薄雾 🌫️",
+        "fog": "大雾 🌁",
+        "light snow": "小雪 ❄️",
+        "moderate snow": "中雪 ❄️",
+        "heavy snow": "大雪 ❄️",
     }
+    desc_lower = desc.lower().strip()
     for k, v in mapping.items():
-        if k.lower() in desc.lower():
+        if k in desc_lower:
             return v
+
+    if "rain" in desc_lower:
+        return "有雨 🌧️"
+    if "cloud" in desc_lower:
+        return "多云 ⛅"
+    if "sun" in desc_lower:
+        return "晴朗 ☀️"
+    if "snow" in desc_lower:
+        return "有雪 ❄️"
+
     return desc
 
 def get_weather_info(city, amap_key=None):
@@ -258,15 +274,16 @@ def main():
         return
 
     # 2. 组装数据
-    city = config.get("city", "北京")
+    city = config.get("city", "闽侯")
+    display_city = "福州 · 闽侯" if "闽侯" in city else city
     amap_key = config.get("amap_key", "")
-    weather_info = get_weather_info(city, amap_key)
+    weather_info = get_weather_info("闽侯" if "闽侯" in city else city, amap_key)
     tips = get_care_tips(weather_info)
 
-    start_date = config.get("start_date", "2023-01-01")
+    start_date = config.get("start_date", "2022-05-05")
     love_days = calculate_love_days(start_date)
 
-    birthday = config.get("birthday", "10-01")
+    birthday = config.get("birthday", "04-04")
     birthday_days = calculate_birthday_days(birthday)
 
     custom_note = config.get("custom_note", "")
@@ -276,7 +293,7 @@ def main():
     # 3. 构造模板变量及颜色
     template_data = {
         "date": {"value": today_str, "color": "#1E90FF"},
-        "city": {"value": weather_info["city"], "color": "#20B2AA"},
+        "city": {"value": display_city, "color": "#20B2AA"},
         "weather": {"value": weather_info["weather"], "color": "#3CB371"},
         "temperature": {"value": weather_info["temperature"], "color": "#FF8C00"},
         "wind": {"value": weather_info["wind"], "color": "#4682B4"},
