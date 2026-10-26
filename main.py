@@ -308,40 +308,50 @@ def main():
     words = get_sweet_words(custom_note)
     today_str = get_today_str()
 
-    # 复合紧凑字段（适合高颜值精简卡片）
-    weather_summary = f"{display_city} ｜ {weather_info['weather']} {weather_info.get('temp_range', weather_info['temperature'])}"
-    
-    # 纯天数处理，避免图标重复
-    raw_love_days = calculate_love_days(start_date).replace("❤️", "").replace("天", "").strip()
-    love_summary = f"我们已经相恋 {raw_love_days} 天啦（余生请多指教）"
+    # 1. 紧凑精炼的天气（严格控制长度，绝不出现 ... 截断）
+    weather_summary = f"福州·闽侯 {weather_info['weather']} {weather_info.get('temp_range', '21℃~26℃').replace(' ', '')}"
 
+    # 2. 恋爱天数（彻底删除“余生请多指教”）
+    raw_love_days = calculate_love_days(start_date).replace("❤️", "").replace("天", "").strip()
+    love_clean = f"我们已经相恋 {raw_love_days} 天啦"
+
+    # 3. 生日天数
     raw_birthday_days = calculate_birthday_days(birthday).replace("🎂", "").strip()
     if "今天就是你的生日" in raw_birthday_days:
-        birthday_summary = "今天就是你的生日啦！祝宝贝生日快乐！🎉"
+        birthday_clean = "今天就是你的生日啦！🎉"
     else:
         days_num = "".join([c for c in raw_birthday_days if c.isdigit()])
-        birthday_summary = f"距离宝贝生日还有 {days_num} 天"
+        birthday_clean = f"距宝贝生日还有 {days_num} 天"
 
-    # 构造兼容数据字典（同时兼容老版报表模板与新版高级极简模板）
+    # 4. 获取金句
+    quote_text = ""
+    try:
+        res = requests.get("http://open.iciba.com/dsapi/", timeout=5).json()
+        note = res.get("note", "").strip()
+        if note:
+            quote_text = note
+    except Exception:
+        pass
+    if not quote_text:
+        quote_text = "老街藏着最暖的故事。"
+
+    custom_note = config.get("custom_note", "早安宝贝！今天也是超级想你的一天，记得按时吃早饭哦 ❤️")
+
+    # 构造完美适配的数据字典
     template_data = {
-        # 老版模板字段
-        "date": {"value": today_str, "color": "#1E90FF"},
-        "city": {"value": display_city, "color": "#20B2AA"},
-        "weather": {"value": weather_info["weather"], "color": "#3CB371"},
-        "temperature": {"value": weather_info["temperature"], "color": "#FF8C00"},
-        "wind": {"value": weather_info["wind"], "color": "#4682B4"},
-        "tips": {"value": tips, "color": "#FF69B4"},
-        "love_days": {"value": love_days, "color": "#FF1493"},
-        "birthday_days": {"value": birthday_days, "color": "#FFA500"},
-        "words": {"value": words, "color": "#9370DB"},
-
-        # 新版高级极简风模板字段
+        # 兼容当前正在使用的模板 (HrvMgEZKhLyknw6Pi80BWjLjfNBsBEl9drTBu0NrmoE)
         "greeting": {"value": "亲爱的宝贝，早安！✨", "color": "#FF1493"},
         "weather_line": {"value": weather_summary, "color": "#1E90FF"},
-        "tips_line": {"value": tips, "color": "#FF69B4"},
-        "love_line": {"value": love_summary, "color": "#FF4500"},
-        "birthday_line": {"value": birthday_summary, "color": "#FFA500"},
-        "sweet_words": {"value": words, "color": "#6A5ACD"}
+        "tips_line": {"value": f"{tips} ｜ {birthday_clean}", "color": "#FF69B4"},
+        "love_line": {"value": love_clean, "color": "#FF4500"},
+        "birthday_line": {"value": f"{custom_note}\n💬 每日一句：{quote_text}", "color": "#6A5ACD"},
+        "sweet_words": {"value": f"{custom_note}\n\n💬 每日一句：{quote_text}", "color": "#6A5ACD"},
+
+        # 终极完美4行模板字段 (weather, love, note, quote)
+        "weather": {"value": f"{weather_summary} ({tips})", "color": "#1E90FF"},
+        "love": {"value": f"{love_clean} ｜ {birthday_clean}", "color": "#FF4500"},
+        "note": {"value": custom_note, "color": "#FF1493"},
+        "quote": {"value": quote_text, "color": "#6A5ACD"}
     }
 
     openids = []
