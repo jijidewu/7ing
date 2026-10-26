@@ -1,0 +1,11 @@
+{
+  "app_id": "你的微信测试号appID",
+  "app_secret": "你的微信测试号appsecret",
+  "template_id": "你的微信测试号模板ID",
+  "user_openid": "你女朋友扫码后的微信号(OpenID)",
+  "city": "北京",
+  "start_date": "2023-05-20",
+  "birthday": "10-01",
+  "custom_note": "今天又是超级想你的一天，记得按时吃早餐哦！",
+  "amap_key": ""
+}
