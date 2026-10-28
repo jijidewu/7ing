@@ -467,7 +467,7 @@ def main():
 
     app_id = config.get("app_id")
     app_secret = config.get("app_secret")
-    template_id = config.get("night_template_id") if is_night else config.get("template_id")
+    template_id = config.get("night_template_id") if (is_night and config.get("night_template_id")) else config.get("template_id")
     user_openid = config.get("user_openid")
 
     city = config.get("city", "福州闽侯")
@@ -489,9 +489,8 @@ def main():
         print("[预览模式] 未实际发送。")
         return
 
-    if is_night and not template_id:
-        print("[错误] 晚安推送需要单独的模板（标题不能是“早上好”），请配置 night_template_id / NIGHT_TEMPLATE_ID。")
-        sys.exit(1)
+    if is_night and not config.get("night_template_id"):
+        print("[提示] 未配置 NIGHT_TEMPLATE_ID，自动复用早安模板发送晚安内容。")
 
     if not app_id or not app_secret or not template_id or not user_openid:
         print("[错误] 缺少核心配置！")
