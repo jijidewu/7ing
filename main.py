@@ -393,50 +393,76 @@ def build_morning_data(config, weather_info, city_label):
     }
 
 def build_night_data(config, weather_info, city_label):
-    """晚安推送：明日天气 + 明日提醒 + 恋爱天数 + 晚安叮嘱 + 晚安情话"""
+    """晚安推送（方案 B 极简浪漫风）：每晚思念 + 恋爱天数 + 睡前关怀 + 枕边情话（彻底告别死板天气）"""
     today = beijing_today()
     tomorrow = today + datetime.timedelta(days=1)
     msgs = load_messages()
 
-    weather_line = build_weather_line(weather_info, "明天")
-    tips = build_tips(weather_info, today, "明天")
     love_line, birthday_text = build_love_line(config)
-    note = pick_daily(msgs.get("night_notes", []), today, "night-note", "今天辛苦啦，早点睡哦")
-    quote = pick_daily(msgs.get("night_words", []), today, "night-word", "今天也很爱你，晚安")
+    thought = pick_daily(msgs.get("night_notes", []), today, "night-note", "今天的最后一个念头，依然是你")
+    whisper = pick_daily(msgs.get("night_words", []), today, "night-word", "想做你枕边的小夜灯，陪你到天亮")
 
-    # 今天是特殊日子：换成对应的晚安心意
+    # 1. 今天是特殊日子：换成对应的专属晚安心声
     today_event = next((e for e in get_events(today, config) if e["note"]), None)
     if today_event:
-        note = today_event["night_note"] or f"今天是{today_event['name']}，开心吗"
+        thought = today_event["night_note"] or f"今天是{today_event['name']}，开心吗"
 
-    # 明天是特殊日子：在贴士里提前预告（下雨时仍优先提醒带伞）
+    # 2. 睡前关怀与明日微提醒（生活化温柔提醒，不报死板参数）
+    care_options = [
+        "放下手机闭上眼，睡个好觉哦",
+        "被窝要盖严实，脚丫别露在外面",
+        "睡前喝点温水，好梦连连",
+        "不许熬夜刷手机，眼睛要休息啦",
+        "今天辛苦啦，剩下的烦恼交给我",
+        "安心睡吧，明天醒来第一句还是我"
+    ]
+    care = pick_daily(care_options, today, "night-care", care_options[0])
+
+    # 如果明天有特殊日子或特殊天气，贴心融入关怀中
     tomorrow_event = next((e for e in get_events(tomorrow, config) if e["note"]), None)
     if tomorrow_event:
         print(f"[预告] 明天是：{tomorrow_event['name']}")
-        if "雨" not in weather_info['weather']:
-            tips = f"明天是{tomorrow_event['name']}，早点睡哦"
+        care = f"明天是{tomorrow_event['name']}，早点睡养足精神"
+    elif "雨" in weather_info.get("weather", ""):
+        care = "明天有雨，出门记得把伞装进包里"
+    elif "雪" in weather_info.get("weather", ""):
+        care = "明天有雪，穿暖和点慢慢走哦"
+    elif weather_info.get("max_temp", 25) - weather_info.get("min_temp", 20) >= 10:
+        care = "明天温差有点大，记得多带件外套"
 
     return {
-        "greeting": "晚安，我的小亚晴 🌙",
-        "weather": weather_line,
-        "tips": fit(tips),
+        "greeting": "月亮睡了，小亚晴也是 ✨",
+        "night_thought": fit(thought),
         "love": love_line,
+        "care": fit(care),
+        "whisper": fit(whisper),
+
+        # 兼容老版模板字段
+        "weather": f"明天 {weather_info.get('weather','').split(' ')[0]} {weather_info.get('min_temp',18)}~{weather_info.get('max_temp',25)}℃",
+        "tips": fit(care),
+        "note": fit(thought),
+        "quote": fit(whisper),
         "birthday": birthday_text,
-        "note": fit(note),
-        "quote": fit(quote),
     }
 
 def to_template_data(content):
-    """构造模板数据（确保模板中所有占位符如 greeting 均有值，避免显示变量名）"""
+    """构造模板数据（同时兼容早安模板与方案 B 专属晚安模板）"""
     data = {
+        # 通用
         "greeting": content.get("greeting", "早安，小亚晴"),
+        "love": content.get("love", ""),
+        "birthday": content.get("birthday", ""),
+
+        # 早安模板字段
         "weather": content.get("weather", ""),
         "tips": content.get("tips", ""),
-        "love": content.get("love", ""),
         "note": content.get("note", ""),
         "quote": content.get("quote", ""),
-        # 兼容备用字段名
-        "birthday": content.get("birthday", ""),
+
+        # 晚安模板专属字段 (月亮睡了，小亚晴也是)
+        "night_thought": content.get("night_thought", content.get("note", "")),
+        "care": content.get("care", content.get("tips", "")),
+        "whisper": content.get("whisper", content.get("quote", "")),
     }
     return {k: {"value": v} for k, v in data.items()}
 
@@ -480,9 +506,16 @@ def main():
         content = build_morning_data(config, weather_info, short_city(city))
 
     print("\n—— 卡片预览（括号内为字数，微信上限 20）——")
-    icons = {"weather": "🌤️", "tips": "🧣", "love": "❤️", "note": "💌", "quote": "💬"}
-    for key in ("weather", "tips", "love", "note", "quote"):
-        print(f"{icons[key]}  {content[key]}  ({len(content[key])})")
+    if is_night:
+        print(f"✨  {content['greeting']}")
+        print(f"🌙  {content['night_thought']}  ({len(content['night_thought'])})")
+        print(f"❤️  {content['love']}  ({len(content['love'])})")
+        print(f"🛌  {content['care']}  ({len(content['care'])})")
+        print(f"💌  {content['whisper']}  ({len(content['whisper'])})")
+    else:
+        icons = {"weather": "🌤️", "tips": "🧣", "love": "❤️", "note": "💌", "quote": "💬"}
+        for key in ("weather", "tips", "love", "note", "quote"):
+            print(f"{icons[key]}  {content[key]}  ({len(content[key])})")
     print("—" * 20 + "\n")
 
     if args.dry_run:
