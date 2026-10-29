@@ -1,10 +1,8 @@
 name: 微信每日早安推送
 
 on:
-  # 每天北京时间早上 07:57 自动触发 (UTC 23:57，错峰避开整点/半点高峰)
-  schedule:
-    - cron: '57 23 * * *'
-  # 支持在 GitHub 页面上手动点击测试
+  # 由外部精准定时器（如 Cron-Job.org 每天 07:57）直接调用 API 触发
+  # 移除 GitHub 内置 schedule，彻底杜绝 GitHub 高峰期长达数小时的严重延迟和误报
   workflow_dispatch:
 
 jobs:
